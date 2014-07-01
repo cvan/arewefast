@@ -7,6 +7,8 @@ from flask.ext.sqlalchemy import SQLAlchemy
 
 import requests
 
+from utils import get_resource_type
+
 
 if not os.environ.get('APP_SETTINGS'):
     os.environ['APP_SETTINGS'] = 'config.DevelopmentConfig'
@@ -33,12 +35,13 @@ DEFAULT_SORT_ORDERS = {
 RESOURCE_TYPES = [
     'audio',
     'css',
-    'cssimage',
+    # 'cssimage',
     'doc',
     'flash',
     'font',
-    'inlinecssimage',
-    'inlineimage',
+    'image',
+    # 'inlinecssimage',
+    # 'inlineimage',
     'js',
     'json',
     'other',
@@ -83,16 +86,23 @@ def generate_report(report):
 
     try:
         entries = report.har['log']['entries']
-    except KeyError:
+    except (TypeError, KeyError):
+        # `TypeError` if `report.har` is a string.
+        # `KeyError` if one of the keys doesn't exist.
         return data
 
     for entry in entries:
-        if 'response' not in entry or 'content' not in entry['response']:
+        if not entry.get('response', {}).get('content'):
             break
 
+        headers = dict((x['name'].lower(), x['value'])
+                       for x in entry['response']['headers'])
+
+        # Custom `_type` field.
         type_ = entry['response']['content'].get('_type')
         if type_ not in RESOURCE_TYPES:
-            type_ = 'other'
+            type_ = get_resource_type(headers.get('content-type'),
+                                      entry['request'].get('url'))
 
         size = entry['response']['bodySize']
         time = entry['timings']['wait'] + entry['timings']['receive']
@@ -188,9 +198,8 @@ def get_reports():
             sort_order = DEFAULT_SORT_ORDERS[sort_field]
 
     # Example: `query.order_by(Report.created.desc())`
-    query = query.order_by(
-        getattr(getattr(Report, sort_field), sort_order)()
-    )
+    field = getattr(Report, sort_field)
+    query = query.order_by(getattr(field, sort_order)())
 
     items = [public_report(report) for report in query.all()]
     return jsonify(total_count=len(items), items=items)

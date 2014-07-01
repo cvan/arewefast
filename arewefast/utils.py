@@ -1,8 +1,8 @@
 def get_resource_type(ct, url):
     # Strip everything after the hash and the querystring (if present).
-    ext = url.rsplit('#', 1)[0].rsplit('?', 1)[0].lower()
+    ext = (url or '').rsplit('#', 1)[0].rsplit('?', 1)[0].lower()
 
-    ct = ct.lower()
+    ct = (ct or '').lower()
 
     if ct.startswith('text/css'):
         return 'css'
