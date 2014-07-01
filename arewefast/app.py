@@ -113,7 +113,7 @@ def generate_report(report):
 
         data['sizes']['total'] += size
         data['times']['total'] += time
-        data['totals']['total'] +=1
+        data['totals']['total'] += 1
 
     return data
 
