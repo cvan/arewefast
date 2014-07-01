@@ -1,2 +1,2 @@
 def eq_(a, b, msg=None):
-    assert a == b, msg or '%s != %s' % (a, b)
+    assert a == b, msg or '%r != %r' % (a, b)
